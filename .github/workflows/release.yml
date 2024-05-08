@@ -74,7 +74,7 @@ jobs:
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
         with:
-          commit: ${{ github.ref }}
+          commit: main
           tag: ${{ needs.build.outputs.tag }}
           name: Release ${{ needs.build.outputs.tag }}
           body: "${{ needs.build.outputs.changelog }}\n\nContainer URI: alex4108/discord_photo_reaper:${{steps.tag_version.outputs.new_tag}}"
