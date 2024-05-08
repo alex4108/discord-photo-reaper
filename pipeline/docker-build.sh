@@ -2,8 +2,14 @@
 
 ts=$(date +%s)
 
+image_base="alex4108/discord_photo_reaper"
+
 if [[ "$TAG" == "" ]]; then
-    TAG="alex4108/discord_photo_reaper:${ts}"
+    TAG="${image_base}:${ts}"
+fi
+
+if [[ "$GITHUB_ACTIONS" != "" ]]; then
+    TAG="${image_base}:${TAG}"
 fi
 
 set -exuo pipefail
