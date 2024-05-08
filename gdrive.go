@@ -140,7 +140,7 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 }
 
 // getOrCreateFolder retrieves the ID of an existing folder by name or creates it if it doesn't exist
-func getOrCreateFolder(folderName string) (string, error) {
+func getOrCreateFolder(driveService *drive.Service, folderName string) (string, error) {
 	// Search for the folder by name
 	query := fmt.Sprintf("name='%s' and mimeType='application/vnd.google-apps.folder'", folderName)
 	files, err := driveService.Files.List().Q(query).Do()
@@ -167,11 +167,11 @@ func getOrCreateFolder(folderName string) (string, error) {
 }
 
 // uploadToGoogleDrive uploads the file from memory to Google Drive in a specified folder
-func uploadToGoogleDrive(data *bytes.Buffer, filename string) error {
+func uploadToGoogleDrive(driveService *drive.Service, data *bytes.Buffer, filename string) error {
 	start := time.Now()
 	folderName := "discord-export"
 
-	folderID, err := getOrCreateFolder(folderName)
+	folderID, err := getOrCreateFolder(driveService, folderName)
 	if err != nil {
 		return fmt.Errorf("error ensuring folder exists: %v", err)
 	}
@@ -191,5 +191,6 @@ func uploadToGoogleDrive(data *bytes.Buffer, filename string) error {
 
 	log.Debugf("File uploaded to Google Drive in folder %s with ID: %s", folderName, uploadedFile.Id)
 	googleDriveUploadDuration.WithLabelValues().Observe(float64(time.Since(start).Seconds()))
+
 	return nil
 }

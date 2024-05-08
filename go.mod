@@ -5,6 +5,7 @@ go 1.21.1
 require (
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/gabriel-vasile/mimetype v1.4.3
+	github.com/prometheus/client_golang v1.19.0
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/oauth2 v0.20.0
 	google.golang.org/api v0.178.0
@@ -26,7 +27,6 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect

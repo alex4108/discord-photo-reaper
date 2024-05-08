@@ -2,20 +2,33 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/api/drive/v3"
 )
 
 // Scans a channel, fetching all messages and processing them
-func scanChannel(dg *discordgo.Session, channelId string) {
+func scanChannel(dg *discordgo.Session, channelId string, driveService *drive.Service) {
 	var lastMessageId string
 	var wg sync.WaitGroup
 
-	//maxConcurrentGoroutines := 10
-	//semaphore := make(chan struct{}, maxConcurrentGoroutines)
+	maxConcurrentGoroutines := 5
+	maxConcurrentGoroutinesStr := os.Getenv("MAX_CONCURRENT_GOROUTINES")
+
+	if maxConcurrentGoroutinesStr != "" {
+		maxConcurrentGoroutines, err := strconv.Atoi(maxConcurrentGoroutinesStr)
+		log.Debugf("Max Routines: %d", maxConcurrentGoroutines)
+		if err != nil {
+			log.Errorf("Failed to parse MAX_CONCURRENT_GOROUTINES: %v", err)
+		}
+	}
+
+	semaphore := make(chan struct{}, maxConcurrentGoroutines)
 
 	for {
 		messages, err := dg.ChannelMessages(channelId, 100, lastMessageId, "", "")
@@ -40,25 +53,19 @@ func scanChannel(dg *discordgo.Session, channelId string) {
 			break
 		}
 
-		// // Acquire a semaphore slot to ensure limited concurrency
-		// semaphore <- struct{}{}
-		// wg.Add(1)
+		semaphore <- struct{}{}
+		wg.Add(1)
 
-		// go func(messages []*discordgo.Message) {
-		// 	defer wg.Done()                // Signal completion
-		// 	defer func() { <-semaphore }() // Release semaphore slot
-		// 	log.Debugf("Start scanner for batch %s %s", channelId, lastMessageId)
-		// 	scanMessages(messages)
-		// }(messages)
+		go func(messages []*discordgo.Message, driveService *drive.Service) {
+			defer wg.Done()                // Signal completion
+			defer func() { <-semaphore }() // Release semaphore slot
+			log.Debugf("Start scanner for batch %s %s", channelId, lastMessageId)
+			scanMessages(driveService, messages)
+		}(messages, driveService)
 
-		log.Debugf("Start scanner for batch %s %s", channelId, lastMessageId)
-		scanMessages(messages)
-
-		// Update last message ID for the next fetch
 		lastMessageId = messages[len(messages)-1].ID
 	}
 
-	// Wait for all goroutines to complete
 	wg.Wait()
 }
 
@@ -96,7 +103,7 @@ func getChannelIds(dg *discordgo.Session, guildId string) []string {
 	return channelIds
 }
 
-func scanMessages(messages []*discordgo.Message) {
+func scanMessages(driveService *drive.Service, messages []*discordgo.Message) {
 	start := time.Now()
 	for _, message := range messages {
 		log.Debugf("Message: %v", message)
@@ -108,6 +115,7 @@ func scanMessages(messages []*discordgo.Message) {
 				attachment.Filename,
 				attachment.ContentType,
 				attachment.Size,
+				driveService,
 			)
 		}
 	}

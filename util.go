@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -85,4 +87,51 @@ func setupLogs() {
 func Fail(msg string) {
 	log.Fatalf(msg)
 	os.Exit(1)
+}
+
+// Initialize processed entities from a file
+func initProcessedEntities() *os.File {
+	file, err := os.Open(processedFilePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Fatalf("Error opening processed entities file: %v", err)
+		}
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		url := strings.TrimSpace(scanner.Text())
+		if url != "" {
+			processedEntities.Store(url, true)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Errorf("Error reading processed entity file: %v", err)
+	}
+
+	return file
+}
+
+// recordOk marks an entity as successfully processed and persists it to the file
+func recordOk(entity string) {
+	if _, loaded := processedEntities.LoadOrStore(entity, true); !loaded {
+		file, err := os.OpenFile(processedFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Errorf("Error opening processed entities file for append: %v", err)
+			return
+		}
+		defer file.Close()
+
+		_, err = file.WriteString(fmt.Sprintf("%s\n", entity))
+		if err != nil {
+			log.Errorf("Error writing entity to processed entities file: %v", err)
+		}
+	}
+}
+
+// checkOk returns true if an entity has already been marked OK.
+func checkOk(entity string) bool {
+	_, exists := processedEntities.Load(entity)
+	return exists
 }

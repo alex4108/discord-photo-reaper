@@ -1,20 +1,18 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/api/drive/v3"
 )
 
 // download downloads the content from the URL into memory and checks its integrity
-func download(url, name, expectedContentType string, expectedFileSize int) {
+func download(url, name, expectedContentType string, expectedFileSize int, driveService *drive.Service) {
 	if checkOk(url) {
 		log.Debugf("File already downloaded %s", url)
 		return // Already downloaded
@@ -56,58 +54,12 @@ func download(url, name, expectedContentType string, expectedFileSize int) {
 	}
 
 	// README Data upload here
-	err = uploadToGoogleDrive(&buf, name)
+	err = uploadToGoogleDrive(driveService, &buf, name)
 	if err != nil {
 		log.Errorf("Error uploading %s to gdrive: %v", url, err)
 		return
 	}
+	uploadedFiles.Add(1)
 
 	recordOk(url)
-}
-
-// Initialize processed URLs from a file
-func initProcessedUrls() *os.File {
-	file, err := os.Open(processedFilePath)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			log.Fatalf("Error opening processed URLs file: %v", err)
-		}
-	}
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		url := strings.TrimSpace(scanner.Text())
-		if url != "" {
-			processedUrls.Store(url, true)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Errorf("Error reading processed URLs file: %v", err)
-	}
-
-	return file
-}
-
-// recordOk marks a URL as successfully processed and persists it to the file
-func recordOk(url string) {
-	if _, loaded := processedUrls.LoadOrStore(url, true); !loaded {
-		file, err := os.OpenFile(processedFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Errorf("Error opening processed URLs file for append: %v", err)
-			return
-		}
-		defer file.Close()
-
-		_, err = file.WriteString(fmt.Sprintf("%s\n", url))
-		if err != nil {
-			log.Errorf("Error writing URL to processed URLs file: %v", err)
-		}
-	}
-}
-
-// checkOk checks if a URL has already been processed
-func checkOk(url string) bool {
-	_, exists := processedUrls.Load(url)
-	return exists
 }

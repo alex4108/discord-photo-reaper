@@ -33,6 +33,13 @@ var (
 		},
 	)
 
+	uploadedFiles = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "dpr_uploaded_files",
+			Help: "# of uploaded files",
+		},
+	)
+
 	lastRunSuccess = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "dpr_success",
@@ -52,6 +59,7 @@ func initMetrics() {
 	prometheus.MustRegister(batchProcessingTime)
 	prometheus.MustRegister(messagesChecked)
 	prometheus.MustRegister(lastRunSuccess)
+	prometheus.MustRegister(uploadedFiles)
 
 	// Expose Prometheus metrics endpoint
 	go func() {

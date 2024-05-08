@@ -7,6 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/api/drive/v3"
 )
 
 func main() {
@@ -40,14 +41,14 @@ func run() {
 	dg := initDiscordGo(token)
 	log.Info("Discord init'ed")
 
-	driveService = initGDriveSvc(
+	driveService := initGDriveSvc(
 		os.Getenv("GOOGLE_CREDENTIALS_FILE"),
 		os.Getenv("GOOGLE_TOKEN_FILE"),
 	)
 	log.Info("GDrive init'd")
 
 	processedFilePath = os.Getenv("STATE_FILE")
-	urlFile := initProcessedUrls()
+	urlFile := initProcessedEntities()
 	log.Info("State file init'ed")
 
 	initMetrics()
@@ -56,7 +57,8 @@ func run() {
 	if os.Getenv("RUN_E2E") == "1" {
 		log.Warn("Running E2E")
 		validateCanDownloadFile(
-			token,
+			dg,
+			driveService,
 			os.Getenv("E2E_CHANNEL_ID"),
 			os.Getenv("E2E_MESSAGE_ID"),
 		)
@@ -67,7 +69,7 @@ func run() {
 	channel_ids := getChannelIds(dg, os.Getenv("DISCORD_GUILD_ID"))
 
 	for _, channel_id := range channel_ids {
-		scanChannel(dg, channel_id)
+		scanChannel(dg, channel_id, driveService)
 	}
 
 	log.Infof("All files downloaded.")
@@ -78,11 +80,7 @@ func run() {
 	log.Infof("The application completed successfully.")
 }
 
-func validateCanDownloadFile(token, channelID string, messageID string) error {
-	log.Infof("E2E: Init Dg")
-	dg := initDiscordGo(token)
-	log.Infof("E2E: Dg Init Completed")
-
+func validateCanDownloadFile(dg *discordgo.Session, driveService *drive.Service, channelID string, messageID string) error {
 	msgs, err := dg.ChannelMessages(channelID, 1, "", "", messageID)
 	if err != nil {
 		log.Fatalf("error fetching message with ID %s: %v", messageID, err)
@@ -98,7 +96,7 @@ func validateCanDownloadFile(token, channelID string, messageID string) error {
 	var messages []*discordgo.Message
 	messages = append(messages, msg)
 	log.Debugf("Scanning....")
-	scanMessages(messages)
+	scanMessages(driveService, messages)
 	log.Debugf("Scan completed")
 	return nil
 }
