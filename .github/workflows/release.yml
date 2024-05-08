@@ -78,4 +78,4 @@ jobs:
         with:
           tag: ${{ needs.build.outputs.tag }}
           name: ${{ needs.build.outputs.tag }}
-          body: "${{ needs.build.outputs.changelog }}\n\nContainer URI: alex4108/discord_photo_reaper:${{steps.tag_version.outputs.new_tag}}"
+          body: "${{ needs.build.outputs.changelog }}\n\nContainer URI: alex4108/discord_photo_reaper:${{needs.build.outputs.tag}}"
