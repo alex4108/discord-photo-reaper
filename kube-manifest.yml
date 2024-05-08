@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: discord-photo-reaper
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: discord-photo-reaper
+  namespace: discord-photo-reaper
+type: Opaque
+data:
+  DISCORD_BOT_TOKEN: // echo -n "$DISCORD_BOT_TOKEN" | base64 | tr -d '\n'
+  GOOGLE_CREDENTIALS: // cat client_secret.json | base64 | tr -d '\n'
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: discord-photo-reaper-pvc
+  namespace: discord-photo-reaper
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord-photo-reaper
+  namespace: discord-photo-reaper
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: discord-photo-reaper
+  template:
+    metadata:
+      labels:
+        app: discord-photo-reaper
+    spec:
+      volumes:
+      - name: discord-photo-reaper-pvc
+        persistentVolumeClaim:
+          claimName: discord-photo-reaper-pvc
+      - name: secrets
+        secret:
+          secretName: discord-photo-reaper
+      containers:
+      - name: app
+        imagePullPolicy: Always
+        image: alex4108/discord_photo_reaper:latest-release
+        env:
+        - name: DISCORD_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: discord-photo-reaper
+              key: DISCORD_BOT_TOKEN
+        - name: DISCORD_GUILD_ID
+          value: ""
+        - name: GOOGLE_REDIRECT_URL
+          value: https://discord-photo-reaper.YOUR_DOMAIN
+        - name: GOOGLE_TOKEN_FILE
+          value: /persist/google.token
+        - name: GOOGLE_CREDENTIALS_FILE
+          value: /secret/GOOGLE_CREDENTIALS
+        - name: STATE_FILE
+          value: /persist/state
+        - name: HTTP_PORT
+          value: "8080"
+        - name: METRICS_HTTP_PORT
+          value: "8081"
+        - name: LOG_LEVEL
+          value: INFO
+        - name: DAEMON
+          value: "1"
+        - name: DAEMON_SLEEP_SECONDS
+          value: "600"
+        ports:
+        - containerPort: 8080
+        - containerPort: 8081
+        volumeMounts:
+        - mountPath: /persist
+          name: discord-photo-reaper-pvc
+        - mountPath: /secret
+          name: secrets
+        resources:
+          requests:
+            memory: 1Gi
+          limits:
+            memory: 1Gi
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discord-photo-reaper-service
+  namespace: discord-photo-reaper
+spec:
+  selector:
+    app: discord-photo-reaper
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discord-photo-reaper-metrics
+  namespace: discord-photo-reaper
+spec:
+  selector:
+    app: discord-photo-reaper
+  ports:
+  - protocol: TCP
+    port: 8081
+    targetPort: 8081
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: discord-photo-reaper-ingress
+  namespace: discord-photo-reaper
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: discord-photo-reaper.YOUR_DOMAIN
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: discord-photo-reaper-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - discord-photo-reaper.YOUR_DOMAIN
+    secretName: discord-photo-reaper.YOUR_DOMAIN-tls
+
+

@@ -1,0 +1,7 @@
+client_secret.json
+client_token.json
+discord-photo-reaper.state
+.env
+discord-photo-reaper
+*.log
+.tag

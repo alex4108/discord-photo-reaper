@@ -1,0 +1,20 @@
+version: '2'
+
+services:
+  discord_photo_reaper:
+    container_name: app
+    image: alex4108/discord_photo_reaper:latest-release
+    environment:
+      ## Change These
+      - DISCORD_BOT_TOKEN=your-bot-token
+      - DISCORD_GUILD_ID=your-guild-id
+      ## Don't Change
+      - LOG_LEVEL=INFO
+      - GOOGLE_TOKEN_FILE=/host/google-token.json
+      - GOOGLE_CREDENTIALS_FILE=/host/google-credentials.json
+      - STATE_FILE=/host/state-file.txt
+    volumes:
+      - ./container-volume:/host 
+    ports:
+      - "8888:8888"
+    restart: never
