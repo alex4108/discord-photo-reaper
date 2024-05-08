@@ -189,7 +189,7 @@ func uploadToGoogleDrive(data *bytes.Buffer, filename string) error {
 		return fmt.Errorf("failed to upload %s to Google Drive: %v", filename, err)
 	}
 
-	log.Infof("File uploaded to Google Drive in folder %s with ID: %s", folderName, uploadedFile.Id)
+	log.Debugf("File uploaded to Google Drive in folder %s with ID: %s", folderName, uploadedFile.Id)
 	googleDriveUploadDuration.WithLabelValues().Observe(float64(time.Since(start).Seconds()))
 	return nil
 }

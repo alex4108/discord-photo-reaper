@@ -39,9 +39,8 @@ func download(url, name, expectedContentType string, expectedFileSize int) {
 	}
 
 	contentType := resp.Header.Get("Content-Type")
-	if contentType != expectedContentType {
-		log.Errorf("unexpected content-type: expected %s, got %s", expectedContentType, contentType)
-		return
+	if contentType != expectedContentType && expectedContentType != "" {
+		log.Warnf("unexpected content-type: expected %s, got %s", expectedContentType, contentType)
 	}
 
 	// This never matches...
