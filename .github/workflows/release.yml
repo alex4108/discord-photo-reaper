@@ -13,6 +13,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       tag: ${{ steps.tag_version.outputs.new_tag }}
       changelog: ${{ steps.tag_version.outputs.changelog }}
@@ -44,37 +46,36 @@ jobs:
         continue-on-error: true
       - name: Build the Docker image
         run: export GH_TAG='${{steps.tag_version.outputs.new_tag}}' && bash ./pipeline/docker-build.sh && bash ./pipeline/docker-push.sh
-#   deploy:
-#     needs: build
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout Repo
-#         uses: actions/checkout@v3
-#       - name: Setup Kubectl
-#         uses: Azure/setup-kubectl@v3
-#       - name: Login to Azure
-#         uses: azure/aks-set-context@v1
-#         with:
-#           creds: "${{ secrets.AZURE_CREDENTIALS }}"
-#           resource-group: "k8s-homelab"
-#           cluster-name: "homelab"
-#         id: login
-#       - name: Deploy to Kubernetes
-#         uses: Azure/k8s-deploy@v4.4
-#         timeout-minutes: 5
-#         with:
-#           action: "deploy"
-#           namespace: "default"
-#           strategy: "basic"
-#           manifests: |
-#             kube-manifest.yml
-#           images: "alex4108/approova:${{needs.build.outputs.tag}}"
-#       # TODO if deploy failed, `kubectl rollout undo Deployment/approovalive`
-#       # TODO if deploy failed, don't create release.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      # - name: Setup Kubectl
+      #   uses: Azure/setup-kubectl@v3
+      # - name: Login to Azure
+      #   uses: azure/aks-set-context@v1
+      #   with:
+      #     creds: "${{ secrets.AZURE_CREDENTIALS }}"
+      #     resource-group: "k8s-homelab"
+      #     cluster-name: "homelab"
+      #   id: login
+      # - name: Deploy to Kubernetes
+      #   uses: Azure/k8s-deploy@v4.4
+      #   timeout-minutes: 5
+      #   with:
+      #     action: "deploy"
+      #     namespace: "default"
+      #     strategy: "basic"
+      #     manifests: |
+      #       kube-manifest.yml
+      #     images: "alex4108/approova:${{needs.build.outputs.tag}}"
+      # # TODO if deploy failed, `kubectl rollout undo Deployment/approovalive`
+      # # TODO if deploy failed, don't create release.
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
         with:
-          commit: main
           tag: ${{ needs.build.outputs.tag }}
-          name: Release ${{ needs.build.outputs.tag }}
+          name: ${{ needs.build.outputs.tag }}
           body: "${{ needs.build.outputs.changelog }}\n\nContainer URI: alex4108/discord_photo_reaper:${{steps.tag_version.outputs.new_tag}}"
