@@ -43,7 +43,7 @@ jobs:
             dpr-docker-cache-
         continue-on-error: true
       - name: Build the Docker image
-        run: export TAG='${{steps.tag_version.outputs.new_tag}}' && bash ./pipeline/docker-build.sh && bash ./pipeline/docker-push.sh
+        run: export GH_TAG='${{steps.tag_version.outputs.new_tag}}' && bash ./pipeline/docker-build.sh && bash ./pipeline/docker-push.sh
 #   deploy:
 #     needs: build
 #     runs-on: ubuntu-latest

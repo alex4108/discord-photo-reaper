@@ -9,7 +9,7 @@ if [[ "$TAG" == "" ]]; then
 fi
 
 if [[ "$GITHUB_ACTIONS" != "" ]]; then
-    TAG="${image_base}:${TAG}"
+    TAG="${image_base}:${GH_TAG}"
 fi
 
 set -exuo pipefail
