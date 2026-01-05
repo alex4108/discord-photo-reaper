@@ -1,13 +1,13 @@
 module github.com/alex4108/discord-photo-reaper
 
-go 1.21.1
+go 1.24.0
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/gabriel-vasile/mimetype v1.4.3
 	github.com/prometheus/client_golang v1.19.0
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/oauth2 v0.20.0
+	golang.org/x/oauth2 v0.34.0
 	google.golang.org/api v0.178.0
 )
 

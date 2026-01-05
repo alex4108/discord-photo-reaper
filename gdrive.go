@@ -16,6 +16,27 @@ import (
 	"google.golang.org/api/option"
 )
 
+// GoogleDriveStorage implements StorageProvider for Google Drive
+type GoogleDriveStorage struct {
+	service *drive.Service
+}
+
+// NewGoogleDriveStorage creates a new Google Drive storage provider
+func NewGoogleDriveStorage(credentialsFile, tokenFile string) *GoogleDriveStorage {
+	service := initGDriveSvc(credentialsFile, tokenFile)
+	return &GoogleDriveStorage{service: service}
+}
+
+// Upload uploads a file to Google Drive
+func (g *GoogleDriveStorage) Upload(data *bytes.Buffer, filename string) error {
+	return uploadToGoogleDrive(g.service, data, filename)
+}
+
+// GetName returns the storage provider name
+func (g *GoogleDriveStorage) GetName() string {
+	return "Google Drive"
+}
+
 // initGDriveSvc initializes the Google Drive service with OAuth 2.0 credentials
 func initGDriveSvc(credentialsFile, tokenFile string) *drive.Service {
 	if credentialsFile == "" {

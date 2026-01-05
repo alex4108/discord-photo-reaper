@@ -5,3 +5,4 @@ discord-photo-reaper.state
 discord-photo-reaper
 *.log
 .tag
+onedrive_token.json

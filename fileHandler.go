@@ -8,11 +8,10 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/api/drive/v3"
 )
 
 // download downloads the content from the URL into memory and checks its integrity
-func download(url, name, expectedContentType string, expectedFileSize int, driveService *drive.Service) {
+func download(url, name, expectedContentType string, expectedFileSize int, storage StorageProvider) {
 	if checkOk(url) {
 		log.Debugf("File already downloaded %s", url)
 		return // Already downloaded
@@ -53,10 +52,10 @@ func download(url, name, expectedContentType string, expectedFileSize int, drive
 		log.Warnf("content-type mismatch: expected %s, detected %s", expectedContentType, mimeType.String())
 	}
 
-	// README Data upload here
-	err = uploadToGoogleDrive(driveService, &buf, name)
+	// Upload to configured storage provider
+	err = storage.Upload(&buf, name)
 	if err != nil {
-		log.Errorf("Error uploading %s to gdrive: %v", url, err)
+		log.Errorf("Error uploading %s to %s: %v", url, storage.GetName(), err)
 		return
 	}
 	uploadedFiles.Add(1)

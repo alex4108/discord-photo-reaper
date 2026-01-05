@@ -9,11 +9,10 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/api/drive/v3"
 )
 
 // Scans a channel, fetching all messages and processing them
-func scanChannel(dg *discordgo.Session, channelId string, driveService *drive.Service) {
+func scanChannel(dg *discordgo.Session, channelId string, storage StorageProvider) {
 	var lastMessageId string
 	var wg sync.WaitGroup
 
@@ -56,12 +55,12 @@ func scanChannel(dg *discordgo.Session, channelId string, driveService *drive.Se
 		semaphore <- struct{}{}
 		wg.Add(1)
 
-		go func(messages []*discordgo.Message, driveService *drive.Service) {
+		go func(messages []*discordgo.Message, storage StorageProvider) {
 			defer wg.Done()                // Signal completion
 			defer func() { <-semaphore }() // Release semaphore slot
 			log.Debugf("Start scanner for batch %s %s", channelId, lastMessageId)
-			scanMessages(driveService, messages)
-		}(messages, driveService)
+			scanMessages(storage, messages)
+		}(messages, storage)
 
 		lastMessageId = messages[len(messages)-1].ID
 	}
@@ -103,7 +102,7 @@ func getChannelIds(dg *discordgo.Session, guildId string) []string {
 	return channelIds
 }
 
-func scanMessages(driveService *drive.Service, messages []*discordgo.Message) {
+func scanMessages(storage StorageProvider, messages []*discordgo.Message) {
 	start := time.Now()
 	for _, message := range messages {
 		log.Debugf("Message: %v", message)
@@ -115,7 +114,7 @@ func scanMessages(driveService *drive.Service, messages []*discordgo.Message) {
 				attachment.Filename,
 				attachment.ContentType,
 				attachment.Size,
-				driveService,
+				storage,
 			)
 		}
 	}
